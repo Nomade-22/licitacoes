@@ -223,31 +223,58 @@
 
       try {
         const proxy = "https://pncp-proxy.jhonygui.workers.dev";
-        const alvo  = `https://pncp.gov.br/api/pncp/v1/contratacoes?ano=${ano}&pagina=1&tamanhoPagina=40`;
-        const url   = `${proxy}?url=${encodeURIComponent(alvo)}`;
+
+        // Datas do ano selecionado (formato exigido: AAAAMMDD)
+        const dataInicial = `${ano}0101`;
+        const dataFinal   = `${ano}1231`;
+
+        // Endpoint público oficial de consultas do PNCP (contratações por data de publicação)
+        // https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao
+        const alvo =
+          `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao` +
+          `?dataInicial=${dataInicial}` +
+          `&dataFinal=${dataFinal}` +
+          `&pagina=1&tamanhoPagina=40`;
+
+        const url = `${proxy}?url=${encodeURIComponent(alvo)}`;
 
         const resp = await fetch(url);
+
+        // 204 = sem conteúdo (nenhum resultado)
+        if (resp.status === 204) {
+          status.textContent = "Nenhum resultado encontrado para o período informado.";
+          return;
+        }
+
         if (!resp.ok) throw new Error("HTTP " + resp.status);
 
         const json = await resp.json();
 
+        // A estrutura padrão dessa API tem campo "data" com os registros
+        const itens = json.data || json || [];
+
         let total = 0;
         let count = 0;
 
-        json.data.forEach(item => {
-          if (termo && !item.objeto.toLowerCase().includes(termo)) return;
+        itens.forEach(item => {
+          // Alguns campos variam um pouco, protegemos com fallback
+          const objeto = (item.objeto || item.objetoContratacao || "").toLowerCase();
+          if (termo && !objeto.includes(termo)) return;
 
-          const valor = item.valorEstimado || 0;
+          const valor = item.valorEstimado || item.valorTotalEstimado || 0;
           if (valor > 0) {
             total += valor;
             count++;
           }
 
+          const orgao = item.orgaoEntidade?.razaoSocial || item.nomeRazaoSocial || "Órgão não informado";
+          const modalidade = item.modalidadeNome || item.modalidadeContratacao || "-";
+
           lista.innerHTML += `
             <tr>
-              <td>${item.orgaoEntidade.razaoSocial}</td>
-              <td>${item.objeto}</td>
-              <td>${item.modalidadeNome}</td>
+              <td>${orgao}</td>
+              <td>${item.objeto || item.objetoContratacao || "-"}</td>
+              <td>${modalidade}</td>
               <td class="valor">R$ ${valor.toLocaleString("pt-BR")}</td>
             </tr>
           `;
@@ -270,3 +297,10 @@
       } catch (e) {
         console.error(e);
         status.textContent =
+          "Erro ao consultar a API (proxy). Verifique se o Worker está ativo.";
+        status.className = "status err";
+      }
+    }
+  </script>
+</body>
+</html>
