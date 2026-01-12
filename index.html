@@ -224,44 +224,45 @@
       try {
         const proxy = "https://pncp-proxy.jhonygui.workers.dev";
 
-        // Datas do ano selecionado (formato exigido: AAAAMMDD)
+        // Datas do ano selecionado (formato AAAAMMDD)
         const dataInicial = `${ano}0101`;
         const dataFinal   = `${ano}1231`;
 
-        // Endpoint público oficial de consultas do PNCP (contratações por data de publicação)
-        // https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao
+        // ⚠️ Endpoint oficial de consultas: contratacoes/publicacao
+        // Campos obrigatórios: dataInicial, dataFinal, codigoModalidadeContratacao, pagina
+        // Aqui estou fixando codigoModalidadeContratacao = 8 (exemplo do manual, pregão)
         const alvo =
           `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao` +
           `?dataInicial=${dataInicial}` +
           `&dataFinal=${dataFinal}` +
+          `&codigoModalidadeContratacao=8` +
           `&pagina=1&tamanhoPagina=40`;
 
         const url = `${proxy}?url=${encodeURIComponent(alvo)}`;
 
         const resp = await fetch(url);
 
-        // 204 = sem conteúdo (nenhum resultado)
         if (resp.status === 204) {
           status.textContent = "Nenhum resultado encontrado para o período informado.";
           return;
         }
 
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        if (!resp.ok) {
+          throw new Error("HTTP " + resp.status);
+        }
 
         const json = await resp.json();
 
-        // A estrutura padrão dessa API tem campo "data" com os registros
         const itens = json.data || json || [];
 
         let total = 0;
         let count = 0;
 
         itens.forEach(item => {
-          // Alguns campos variam um pouco, protegemos com fallback
-          const objeto = (item.objeto || item.objetoContratacao || "").toLowerCase();
-          if (termo && !objeto.includes(termo)) return;
+          const objetoTexto = (item.objeto || item.objetoContratacao || "").toLowerCase();
+          if (termo && !objetoTexto.includes(termo)) return;
 
-          const valor = item.valorEstimado || item.valorTotalEstimado || 0;
+          const valor = item.valorTotalEstimado || item.valorEstimado || 0;
           if (valor > 0) {
             total += valor;
             count++;
@@ -297,7 +298,7 @@
       } catch (e) {
         console.error(e);
         status.textContent =
-          "Erro ao consultar a API (proxy). Verifique se o Worker está ativo.";
+          "Erro ao consultar a API (proxy). Verifique se o Worker está ativo ou tente novamente.";
         status.className = "status err";
       }
     }
