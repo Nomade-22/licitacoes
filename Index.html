@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Busca de Pregões Públicos | Base de Orçamento</title>
+<title>Buscador de Pregões Públicos | Base de Orçamento</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -11,7 +11,6 @@ body {
     background: #0f172a;
     color: #e5e7eb;
     margin: 0;
-    padding: 0;
 }
 
 header {
@@ -27,14 +26,14 @@ header h1 {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1300px;
     margin: auto;
     padding: 20px;
 }
 
 .filters {
     display: grid;
-    grid-template-columns: 1fr 200px 150px 120px;
+    grid-template-columns: 1fr 200px 140px 120px;
     gap: 10px;
     margin-bottom: 20px;
 }
@@ -65,21 +64,39 @@ button:hover {
 table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 13px;
 }
 
 th, td {
     padding: 10px;
     border-bottom: 1px solid #1e293b;
-    text-align: left;
+    vertical-align: top;
 }
 
 th {
     background: #020617;
+    position: sticky;
+    top: 0;
 }
 
 .valor {
     color: #22c55e;
     font-weight: bold;
+    white-space: nowrap;
+}
+
+.loading {
+    padding: 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.summary {
+    margin-top: 20px;
+    padding: 15px;
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
 }
 
 footer {
@@ -87,6 +104,7 @@ footer {
     padding: 15px;
     color: #94a3b8;
     font-size: 12px;
+    border-top: 1px solid #1e293b;
 }
 </style>
 </head>
@@ -94,17 +112,19 @@ footer {
 <body>
 
 <header>
-    <h1>🔍 Buscador de Pregões Públicos — Base para Orçamento</h1>
+    <h1>🔍 Buscador de Pregões Públicos — Base Histórica para Orçamento</h1>
 </header>
 
 <div class="container">
 
     <div class="filters">
-        <input type="text" id="descricao" placeholder="Ex: pintura, manutenção, elétrica...">
-        <input type="text" id="orgao" placeholder="CNPJ do órgão (opcional)">
+        <input type="text" id="descricao" placeholder="Ex: pintura, manutenção, elétrica, obra civil">
         <input type="number" id="ano" placeholder="Ano" value="2024">
+        <input type="number" id="limite" placeholder="Resultados" value="20">
         <button onclick="buscar()">Buscar</button>
     </div>
+
+    <div id="status" class="loading"></div>
 
     <table>
         <thead>
@@ -119,65 +139,76 @@ footer {
         <tbody id="resultado"></tbody>
     </table>
 
-    <h3 id="media"></h3>
+    <div id="resumo" class="summary" style="display:none;"></div>
 
 </div>
 
 <footer>
-    Dados oficiais – PNCP | Compras Públicas do Brasil
+    Dados oficiais do PNCP • Compras Públicas do Brasil
 </footer>
 
 <script>
 async function buscar() {
-    const descricao = document.getElementById("descricao").value;
-    const orgao = document.getElementById("orgao").value;
+    const descricao = document.getElementById("descricao").value.toLowerCase();
     const ano = document.getElementById("ano").value;
+    const limite = document.getElementById("limite").value;
     const tbody = document.getElementById("resultado");
-    const mediaEl = document.getElementById("media");
+    const status = document.getElementById("status");
+    const resumo = document.getElementById("resumo");
 
-    tbody.innerHTML = "Carregando...";
-    mediaEl.innerHTML = "";
-
-    let url = `https://pncp.gov.br/api/pncp/v1/contratacoes/publicacao?ano=${ano}&pagina=1&tamanhoPagina=20`;
-
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    let total = 0;
-    let count = 0;
     tbody.innerHTML = "";
+    resumo.style.display = "none";
+    status.innerHTML = "🔄 Buscando dados no PNCP...";
 
-    data.data.forEach(item => {
-        if (
-            descricao && !item.objeto.toLowerCase().includes(descricao.toLowerCase())
-        ) return;
+    // Proxy CORS (necessário para GitHub Pages)
+    const baseURL = "https://corsproxy.io/?https://pncp.gov.br/api/pncp/v1";
+    const url = `${baseURL}/contratacoes/publicacao?ano=${ano}&pagina=1&tamanhoPagina=${limite}`;
 
-        if (
-            orgao && item.orgaoEntidade.cnpj !== orgao
-        ) return;
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
 
-        const valor = item.valorEstimado || 0;
-        if (valor > 0) {
-            total += valor;
-            count++;
+        let total = 0;
+        let count = 0;
+
+        data.data.forEach(item => {
+            if (descricao && !item.objeto.toLowerCase().includes(descricao)) return;
+
+            const valor = item.valorEstimado || 0;
+
+            if (valor > 0) {
+                total += valor;
+                count++;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.orgaoEntidade.razaoSocial}</td>
+                    <td>${item.objeto}</td>
+                    <td>${item.modalidadeNome}</td>
+                    <td>${item.dataPublicacao}</td>
+                    <td class="valor">R$ ${valor.toLocaleString('pt-BR')}</td>
+                </tr>
+            `;
+        });
+
+        if (count > 0) {
+            const media = total / count;
+            resumo.style.display = "block";
+            resumo.innerHTML = `
+                📊 <strong>Análise Histórica</strong><br><br>
+                Total de registros analisados: <strong>${count}</strong><br>
+                Valor médio estimado: <span class="valor">R$ ${media.toLocaleString('pt-BR')}</span><br>
+                Soma dos valores: <span class="valor">R$ ${total.toLocaleString('pt-BR')}</span>
+            `;
+            status.innerHTML = "✅ Consulta concluída";
+        } else {
+            status.innerHTML = "⚠️ Nenhum resultado encontrado com os filtros aplicados.";
         }
 
-        tbody.innerHTML += `
-            <tr>
-                <td>${item.orgaoEntidade.razaoSocial}</td>
-                <td>${item.objeto}</td>
-                <td>${item.modalidadeNome}</td>
-                <td>${item.dataPublicacao}</td>
-                <td class="valor">R$ ${valor.toLocaleString('pt-BR')}</td>
-            </tr>
-        `;
-    });
-
-    if (count > 0) {
-        const media = total / count;
-        mediaEl.innerHTML = `📊 Valor médio histórico: <span class="valor">R$ ${media.toLocaleString('pt-BR')}</span>`;
-    } else {
-        mediaEl.innerHTML = "Nenhum valor encontrado para cálculo de média.";
+    } catch (erro) {
+        status.innerHTML = "❌ Erro ao consultar a API do PNCP.";
+        console.error(erro);
     }
 }
 </script>
