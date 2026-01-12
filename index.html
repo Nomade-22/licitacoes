@@ -78,14 +78,13 @@
       border: none;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.08s ease;
+      transition: all 0.1s ease;
     }
     button:hover {
       opacity: 0.95;
       box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
       transform: translateY(-1px);
     }
-    button:active { transform: translateY(0); box-shadow: none; }
 
     .status {
       font-size: 12px;
@@ -271,10 +270,3 @@
       } catch (e) {
         console.error(e);
         status.textContent =
-          "Erro ao consultar a API (proxy). Verifique se o Worker está ativo.";
-        status.className = "status err";
-      }
-    }
-  </script>
-</body>
-</html>
