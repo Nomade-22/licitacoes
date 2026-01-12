@@ -2,63 +2,83 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Buscador de Pregões Públicos | Base de Orçamento</title>
+<title>Buscador de Pregões Públicos</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+:root {
+    --bg: #0b1220;
+    --card: #111827;
+    --border: #1f2937;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --primary: #2563eb;
+    --success: #22c55e;
+}
+
+* { box-sizing: border-box; }
+
 body {
-    font-family: Inter, Arial, sans-serif;
-    background: #0f172a;
-    color: #e5e7eb;
     margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    background: linear-gradient(180deg, #020617, #0b1220);
+    color: var(--text);
 }
 
 header {
-    background: #020617;
-    padding: 20px;
+    padding: 16px;
     text-align: center;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid var(--border);
+    background: #020617;
 }
 
 header h1 {
+    font-size: 18px;
     margin: 0;
-    font-size: 22px;
 }
 
 .container {
-    max-width: 1300px;
+    max-width: 1100px;
     margin: auto;
-    padding: 20px;
+    padding: 16px;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
 }
 
 .filters {
     display: grid;
-    grid-template-columns: 1fr 200px 140px 120px;
-    gap: 10px;
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 100px 100px;
+    gap: 8px;
 }
 
 input, button {
     padding: 10px;
-    border-radius: 6px;
-    border: none;
-    font-size: 14px;
-}
-
-input {
+    border-radius: 8px;
+    border: 1px solid var(--border);
     background: #020617;
-    color: #e5e7eb;
-    border: 1px solid #1e293b;
+    color: var(--text);
 }
 
 button {
-    background: #2563eb;
-    color: white;
-    cursor: pointer;
+    background: var(--primary);
+    border: none;
+    font-weight: 600;
 }
 
 button:hover {
-    background: #1d4ed8;
+    opacity: 0.9;
+}
+
+.status {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
 }
 
 table {
@@ -69,42 +89,52 @@ table {
 
 th, td {
     padding: 10px;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid var(--border);
     vertical-align: top;
 }
 
 th {
-    background: #020617;
-    position: sticky;
-    top: 0;
+    color: var(--muted);
+    font-weight: 600;
 }
 
 .valor {
-    color: #22c55e;
+    color: var(--success);
     font-weight: bold;
     white-space: nowrap;
 }
 
-.loading {
-    padding: 20px;
-    text-align: center;
-    color: #94a3b8;
-}
-
 .summary {
-    margin-top: 20px;
-    padding: 15px;
-    background: #020617;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
+    margin-top: 10px;
+    font-size: 14px;
 }
 
-footer {
-    text-align: center;
-    padding: 15px;
-    color: #94a3b8;
-    font-size: 12px;
-    border-top: 1px solid #1e293b;
+@media (max-width: 700px) {
+    .filters {
+        grid-template-columns: 1fr;
+    }
+
+    table, thead {
+        display: block;
+    }
+
+    tr {
+        display: block;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    th {
+        display: none;
+    }
+
+    td {
+        display: block;
+        border: none;
+        padding: 4px 0;
+    }
 }
 </style>
 </head>
@@ -112,103 +142,90 @@ footer {
 <body>
 
 <header>
-    <h1>🔍 Buscador de Pregões Públicos — Base Histórica para Orçamento</h1>
+    <h1>🔎 Buscador de Pregões Públicos</h1>
 </header>
 
 <div class="container">
 
-    <div class="filters">
-        <input type="text" id="descricao" placeholder="Ex: pintura, manutenção, elétrica, obra civil">
-        <input type="number" id="ano" placeholder="Ano" value="2024">
-        <input type="number" id="limite" placeholder="Resultados" value="20">
-        <button onclick="buscar()">Buscar</button>
+    <div class="card">
+        <div class="filters">
+            <input id="q" placeholder="Ex: pintura, manutenção, elétrica">
+            <input id="ano" type="number" value="2024">
+            <button onclick="buscar()">Buscar</button>
+        </div>
+        <div id="status" class="status"></div>
     </div>
 
-    <div id="status" class="loading"></div>
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Órgão</th>
+                    <th>Objeto</th>
+                    <th>Modalidade</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody id="lista"></tbody>
+        </table>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Órgão</th>
-                <th>Objeto</th>
-                <th>Modalidade</th>
-                <th>Data</th>
-                <th>Valor Estimado</th>
-            </tr>
-        </thead>
-        <tbody id="resultado"></tbody>
-    </table>
-
-    <div id="resumo" class="summary" style="display:none;"></div>
+        <div id="resumo" class="summary"></div>
+    </div>
 
 </div>
 
-<footer>
-    Dados oficiais do PNCP • Compras Públicas do Brasil
-</footer>
-
 <script>
 async function buscar() {
-    const descricao = document.getElementById("descricao").value.toLowerCase();
+    const termo = document.getElementById("q").value.toLowerCase();
     const ano = document.getElementById("ano").value;
-    const limite = document.getElementById("limite").value;
-    const tbody = document.getElementById("resultado");
     const status = document.getElementById("status");
+    const lista = document.getElementById("lista");
     const resumo = document.getElementById("resumo");
 
-    tbody.innerHTML = "";
-    resumo.style.display = "none";
-    status.innerHTML = "🔄 Buscando dados no PNCP...";
-
-    // Proxy CORS (necessário para GitHub Pages)
-    const baseURL = "https://corsproxy.io/?https://pncp.gov.br/api/pncp/v1";
-    const url = `${baseURL}/contratacoes/publicacao?ano=${ano}&pagina=1&tamanhoPagina=${limite}`;
+    status.textContent = "Buscando dados no PNCP...";
+    lista.innerHTML = "";
+    resumo.innerHTML = "";
 
     try {
+        const url = `https://pncp.gov.br/api/pncp/v1/contratacoes?ano=${ano}&pagina=1&tamanhoPagina=30`;
         const resp = await fetch(url);
-        const data = await resp.json();
+        const json = await resp.json();
 
-        let total = 0;
-        let count = 0;
+        let total = 0, count = 0;
 
-        data.data.forEach(item => {
-            if (descricao && !item.objeto.toLowerCase().includes(descricao)) return;
+        json.data.forEach(item => {
+            if (termo && !item.objeto.toLowerCase().includes(termo)) return;
 
             const valor = item.valorEstimado || 0;
-
             if (valor > 0) {
                 total += valor;
                 count++;
             }
 
-            tbody.innerHTML += `
+            lista.innerHTML += `
                 <tr>
                     <td>${item.orgaoEntidade.razaoSocial}</td>
                     <td>${item.objeto}</td>
                     <td>${item.modalidadeNome}</td>
-                    <td>${item.dataPublicacao}</td>
-                    <td class="valor">R$ ${valor.toLocaleString('pt-BR')}</td>
+                    <td class="valor">R$ ${valor.toLocaleString("pt-BR")}</td>
                 </tr>
             `;
         });
 
-        if (count > 0) {
-            const media = total / count;
-            resumo.style.display = "block";
+        if (count) {
             resumo.innerHTML = `
-                📊 <strong>Análise Histórica</strong><br><br>
-                Total de registros analisados: <strong>${count}</strong><br>
-                Valor médio estimado: <span class="valor">R$ ${media.toLocaleString('pt-BR')}</span><br>
-                Soma dos valores: <span class="valor">R$ ${total.toLocaleString('pt-BR')}</span>
+                📊 <strong>Média histórica:</strong>
+                <span class="valor">R$ ${(total / count).toLocaleString("pt-BR")}</span>
+                <br>Total analisado: ${count} registros
             `;
-            status.innerHTML = "✅ Consulta concluída";
+            status.textContent = "Consulta concluída com sucesso.";
         } else {
-            status.innerHTML = "⚠️ Nenhum resultado encontrado com os filtros aplicados.";
+            status.textContent = "Nenhum resultado encontrado.";
         }
 
-    } catch (erro) {
-        status.innerHTML = "❌ Erro ao consultar a API do PNCP.";
-        console.error(erro);
+    } catch (e) {
+        console.error(e);
+        status.textContent = "Erro ao acessar a API do PNCP.";
     }
 }
 </script>
