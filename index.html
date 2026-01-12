@@ -2,42 +2,42 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Buscador de Licitações PNCP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <title>Buscador de Licitações – RS (PNCP)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --bg: #020617;
-      --bg-soft: #030712;
-      --card: #020617;
-      --card-soft: #020617;
-      --border: #1f2937;
-      --border-soft: #111827;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --bg-card: #111827;
       --primary: #2563eb;
-      --primary-soft: rgba(37,99,235,0.15);
-      --success: #22c55e;
-      --danger: #ef4444;
+      --primary-soft: rgba(37, 99, 235, 0.15);
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #f97373;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.45);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: radial-gradient(circle at top, #020617 0, #000 55%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 50%, #000 100%);
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
-    .page {
-      max-width: 1150px;
+    .wrapper {
+      max-width: 1200px;
       margin: 0 auto;
       padding: 32px 16px 40px;
-      flex: 1;
     }
 
     header {
@@ -46,577 +46,667 @@
     }
 
     header h1 {
-      margin: 0;
-      font-size: 24px;
+      font-size: clamp(1.5rem, 2.4vw, 2.1rem);
       font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 span {
+      font-size: 1.5rem;
     }
 
     header p {
-      margin: 6px 0 0;
-      font-size: 14px;
+      margin-top: 6px;
+      font-size: 0.93rem;
       color: var(--muted);
     }
 
-    .shell {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-      gap: 16px;
-      align-items: flex-start;
-    }
-
-    .panel {
-      background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
-      border-radius: 18px;
-      border: 1px solid var(--border-soft);
-      box-shadow:
-        0 24px 60px rgba(0,0,0,0.75),
-        0 0 0 1px rgba(15,23,42,0.8);
-      padding: 18px 18px 16px;
-    }
-
-    .panel h2 {
-      font-size: 15px;
-      margin: 0 0 4px;
-      display: flex;
+    .badge-uf {
+      display: inline-flex;
       align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.1);
+      border: 1px solid rgba(37, 99, 235, 0.4);
+      font-size: 0.78rem;
+      margin-top: 8px;
+    }
+
+    .badge-uf strong {
+      color: var(--primary);
+    }
+
+    .card {
+      background: linear-gradient(145deg, #020617 0, #020617 40%, #020617 60%, #020617 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 14px;
+      backdrop-filter: blur(14px);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .filters-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
       gap: 6px;
     }
 
-    .chip {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.4);
+    .field label {
+      font-size: 0.78rem;
       color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
-    .subtitle {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-
-    .fields {
-      display: grid;
-      grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 0.6fr));
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    label {
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      display: block;
-    }
-
-    input, select, button {
+    .input,
+    .select {
       width: 100%;
-      border-radius: 9px;
+      padding: 10px 11px;
+      border-radius: var(--radius-md);
       border: 1px solid var(--border);
-      background: rgba(15,23,42,0.9);
+      background: rgba(15, 23, 42, 0.9);
       color: var(--text);
-      font-size: 13px;
-      padding: 9px 10px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
     }
 
-    input::placeholder {
+    .input::placeholder {
       color: #6b7280;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #2563eb, #4f46e5);
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
+    .input:focus,
+    .select:focus {
+      border-color: rgba(59, 130, 246, 0.85);
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.6);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .select[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: transform .08s ease, box-shadow .08s ease, opacity .08s ease;
-    }
-
-    .btn-primary:hover {
-      opacity: .95;
-      box-shadow: 0 14px 35px rgba(59,130,246,0.55);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    .btn-small {
-      font-size: 12px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.35);
-      color: var(--muted);
+      gap: 8px;
+      padding: 11px 18px;
+      border-radius: var(--radius-md);
+      border: none;
       cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #f9fafb;
+      box-shadow: 0 14px 24px rgba(37, 99, 235, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+      white-space: nowrap;
     }
 
-    .btn-small:hover {
-      border-color: rgba(148,163,184,0.7);
-      color: #e5e7eb;
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 28px rgba(37, 99, 235, 0.45);
+      filter: brightness(1.05);
     }
 
-    .row-actions {
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.85);
+      filter: brightness(0.97);
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: wait;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.8);
+      box-shadow: none;
+      font-weight: 500;
+      padding-inline: 10px;
+    }
+
+    .btn-secondary:hover {
+      filter: brightness(1.08);
+    }
+
+    .actions-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 6px;
       gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .status {
-      font-size: 12px;
+      margin: 10px 2px 4px;
+      font-size: 0.8rem;
       color: var(--muted);
-      min-height: 18px;
     }
 
-    .status.ok { color: var(--success); }
-    .status.err { color: var(--danger); }
-
-    .badge {
+    .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 11px;
       padding: 4px 9px;
       border-radius: 999px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.35);
-      color: var(--muted);
+      background: var(--primary-soft);
+      border: 1px solid rgba(37, 99, 235, 0.6);
+      font-size: 0.77rem;
     }
 
-    .badge strong {
-      color: #e5e7eb;
-      font-weight: 600;
-    }
-
-    .side-panel {
-      background: radial-gradient(circle at top, #020617 0, #020617 50%, #000 100%);
-      border-radius: 18px;
-      border: 1px solid var(--border-soft);
-      padding: 14px 15px 12px;
-      box-shadow:
-        0 18px 40px rgba(0,0,0,0.7),
-        0 0 0 1px rgba(15,23,42,0.7);
-      font-size: 13px;
-    }
-
-    .side-step {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-      align-items: flex-start;
-    }
-
-    .side-step-num {
-      width: 18px;
-      height: 18px;
+    .status-dot {
+      width: 7px;
+      height: 7px;
       border-radius: 999px;
-      background: rgba(37,99,235,0.18);
-      border: 1px solid rgba(37,99,235,0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: #bfdbfe;
-      margin-top: 2px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.22);
     }
 
-    .side-step-title {
-      font-size: 13px;
-      font-weight: 600;
+    .error {
+      margin: 4px 2px 0;
+      font-size: 0.8rem;
+      color: var(--danger);
+      min-height: 1em;
     }
 
-    .side-step-text {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .side-note {
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--muted);
-      border-radius: 10px;
-      background: rgba(15,23,42,0.85);
-      border: 1px dashed rgba(148,163,184,0.4);
-      padding: 8px 9px;
-    }
-
-    .table-card {
-      margin-top: 18px;
-      background: rgba(3,7,18,0.98);
-      border-radius: 16px;
-      border: 1px solid #0f172a;
-      box-shadow:
-        0 20px 50px rgba(0,0,0,0.8),
-        0 0 0 1px rgba(15,23,42,0.9);
-      padding: 10px 12px 10px;
+    .table-wrapper {
+      margin-top: 10px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #020617 100%);
+      overflow: hidden;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: 0.86rem;
     }
 
-    th, td {
-      padding: 7px 6px;
-      border-bottom: 1px solid rgba(31,41,55,0.85);
-      vertical-align: top;
+    thead {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    th,
+    td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.75);
     }
 
     th {
-      color: var(--muted);
       font-weight: 600;
-      font-size: 11px;
-      text-align: left;
-    }
-
-    td:nth-child(1) { width: 18%; }
-    td:nth-child(2) { width: 46%; }
-    td:nth-child(3) { width: 18%; }
-    td:nth-child(4) { width: 18%; text-align: right; }
-
-    .valor {
-      color: var(--success);
-      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #9ca3af;
       white-space: nowrap;
     }
 
-    .pill {
-      display: inline-flex;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(37,99,235,0.09);
-      border: 1px solid rgba(37,99,235,0.4);
-      color: #bfdbfe;
-      font-size: 11px;
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.7);
     }
 
-    .summary {
-      margin-top: 8px;
-      font-size: 12px;
-      color: var(--muted);
+    tbody tr:hover {
+      background: rgba(37, 99, 235, 0.07);
+    }
+
+    .col-orgao {
+      max-width: 210px;
+    }
+
+    .col-objeto {
+      max-width: 430px;
+    }
+
+    .col-objeto span {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .col-municipio {
+      white-space: nowrap;
+    }
+
+    .col-datas {
+      white-space: nowrap;
+    }
+
+    .col-valor {
+      white-space: nowrap;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
+      gap: 4px;
+      margin-top: 2px;
+      font-size: 0.74rem;
     }
 
-    .summary strong,
-    .summary .valor {
-      color: var(--text);
+    .tag {
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: #9ca3af;
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .tag-primary {
+      border-color: rgba(37, 99, 235, 0.7);
+      color: #bfdbfe;
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    .empty-row td {
+      text-align: center;
+      padding: 24px 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
     footer {
+      margin-top: 18px;
       text-align: center;
-      padding: 10px 12px 16px;
-      font-size: 11px;
-      color: var(--muted);
+      font-size: 0.75rem;
+      color: #6b7280;
     }
 
-    @media (max-width: 900px) {
-      .shell {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    footer a {
+      color: #93c5fd;
+      text-decoration: none;
     }
 
-    @media (max-width: 720px) {
-      header h1 { font-size: 20px; }
-      .fields {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .table-card {
-        padding: 8px;
-      }
-      table, thead { display: block; }
-      thead { display: none; }
-      tbody { display: block; }
-      tr {
-        display: block;
-        margin-bottom: 8px;
-        border-radius: 10px;
-        border: 1px solid #111827;
-        background: #020617;
-        padding: 6px 8px;
-      }
-      td {
-        display: block;
-        border-bottom: none;
-        padding: 3px 0;
-      }
-      td:nth-child(1) { font-weight: 600; }
-      td:nth-child(4) { text-align: left; margin-top: 2px; }
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
-
 <body>
-  <div class="page">
+  <div class="wrapper">
     <header>
-      <h1>🔎 Buscador de Licitações – PNCP</h1>
-      <p>Busque várias licitações públicas direto do PNCP para ter base de valores em orçamentos.</p>
+      <h1>
+        <span>📊</span>
+        Buscador de Licitações Abertas – PNCP
+      </h1>
+      <p>Consulta rápida a pregões eletrônicos com recebimento de propostas em aberto no PNCP.</p>
+      <div class="badge-uf">
+        <strong>UF: RS</strong>
+        <span>• apenas licitações de órgãos do Rio Grande do Sul</span>
+      </div>
     </header>
 
-    <div class="shell">
-      <!-- Painel principal -->
-      <div class="panel">
-        <h2>
-          🔁 Importar licitações
-          <span class="chip">Consulta API PNCP</span>
-        </h2>
-        <p class="subtitle">
-          Digite um termo, escolha o ano e a quantidade de páginas para buscar. Os dados vêm da API de consultas do PNCP.
-        </p>
-
-        <div class="fields">
-          <div>
-            <label for="q">Descrição / objeto (filtro opcional)</label>
-            <input id="q" placeholder="Ex: pintura, manutenção, elétrica, telhado" />
+    <section class="card">
+      <form id="busca-form">
+        <div class="filters-grid">
+          <div class="field">
+            <label for="descricao">Palavra-chave no objeto</label>
+            <input
+              id="descricao"
+              class="input"
+              type="text"
+              placeholder="Ex: manutenção elétrica, pavimentação, alimentação escolar..."
+            />
           </div>
 
-          <div>
-            <label for="ano">Ano</label>
-            <input id="ano" type="number" value="2024" />
+          <div class="field">
+            <label for="municipio">Município (texto livre)</label>
+            <input
+              id="municipio"
+              class="input"
+              type="text"
+              placeholder="Ex: Porto Alegre, Caxias..."
+            />
           </div>
 
-          <div>
-            <label for="modalidade">Modalidade (código)</label>
-            <input id="modalidade" type="number" value="8" />
-          </div>
-
-          <div>
-            <label for="paginas">Qtde de páginas</label>
-            <input id="paginas" type="number" min="1" max="30" value="5" />
+          <div class="field">
+            <label for="data-final">Recebendo propostas até</label>
+            <input id="data-final" class="input" type="date" />
           </div>
         </div>
 
-        <div class="row-actions">
-          <button class="btn-primary" onclick="buscar()">
-            🔍 Buscar licitações
-          </button>
-
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <span id="status" class="status"></span>
-            <button class="btn-small" onclick="limparTabela()">Limpar resultados</button>
+        <div class="actions-bar">
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button type="submit" id="btn-buscar" class="btn">
+              🔍 Buscar licitações
+            </button>
+            <button type="button" id="btn-limpar" class="btn-secondary">
+              Limpar filtros
+            </button>
           </div>
-        </div>
-      </div>
-
-      <!-- Painel lateral estilo Mocha -->
-      <aside class="side-panel">
-        <div class="side-step">
-          <div class="side-step-num">1</div>
           <div>
-            <div class="side-step-title">Defina o filtro</div>
-            <div class="side-step-text">
-              Use um termo genérico (ex: <strong>pintura</strong>, <strong>manutenção predial</strong>, <strong>telhado</strong>)
-              e um ano para estimar valores praticados.
-            </div>
+            <span id="status-text" class="status-pill" style="display:none;">
+              <span class="status-dot"></span>
+              <span id="status-label">Buscando no PNCP…</span>
+            </span>
           </div>
         </div>
+        <div id="erro" class="error"></div>
+      </form>
 
-        <div class="side-step">
-          <div class="side-step-num">2</div>
-          <div>
-            <div class="side-step-title">Carregue várias páginas</div>
-            <div class="side-step-text">
-              O PNCP devolve resultados paginados (tamanho padrão: 40). Aqui você escolhe quantas páginas buscar de uma vez.
-            </div>
-          </div>
-        </div>
-
-        <div class="side-step">
-          <div class="side-step-num">3</div>
-          <div>
-            <div class="side-step-title">Use como base de orçamento</div>
-            <div class="side-step-text">
-              A tabela mostra órgão, objeto, modalidade e valor estimado. Use a média e o total como referência na formação do seu preço.
-            </div>
-          </div>
-        </div>
-
-        <div class="side-note">
-          ⚠️ Os dados vêm da API pública de <strong>consultas</strong> do PNCP.
-          Nem todas as licitações possuem valor estimado preenchido; nesses casos o valor aparece como R$ 0,00 e não entra nos cálculos.
-        </div>
-      </aside>
-    </div>
-
-    <!-- Tabela de resultados -->
-    <div class="table-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <span class="badge">
-          🔗 Fonte: PNCP – API de Consultas
-        </span>
-        <span id="contagem" class="badge">
-          <strong>0</strong> registros carregados
-        </span>
-      </div>
-
-      <table>
-        <thead>
+      <div class="table-wrapper">
+        <table>
+          <thead>
           <tr>
             <th>Órgão</th>
             <th>Objeto</th>
-            <th>Modalidade</th>
+            <th>Município</th>
+            <th>Datas (abertura / encerramento)</th>
             <th>Valor estimado</th>
+            <th>Ações</th>
           </tr>
-        </thead>
-        <tbody id="lista"></tbody>
-      </table>
+          </thead>
+          <tbody id="result-body">
+          <tr class="empty-row">
+            <td colspan="6">
+              Preencha os filtros acima e clique em <strong>“Buscar licitações”</strong> para ver os resultados.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-      <div id="resumo" class="summary"></div>
-    </div>
+    <footer>
+      Dados oficiais via PNCP – Serviço <code>/v1/contratacoes/proposta</code> – Modalidade:
+      Pregão Eletrônico (cód. 6) :contentReference[oaicite:1]{index=1} –
+      proxy: Cloudflare Workers. Desenvolvido para apoiar estudos de mercado e orçamentos.
+    </footer>
   </div>
 
-  <footer>
-    Dados oficiais via PNCP • Proxy: Cloudflare Workers • Uso apenas como referência de orçamento (sem valor jurídico).
-  </footer>
-
   <script>
-    const PROXY = "https://pncp-proxy.jhonygui.workers.dev";
-    const TAMANHO_PAGINA = 40; // se o PNCP mudar, é só ajustar aqui
+    // 🔧 Ajuste aqui se o prefixo do Worker for diferente
+    const PROXY_BASE = "https://pncp-proxy.jhonygui.workers.dev/pncp-consulta";
 
-    function limparTabela() {
-      document.getElementById("lista").innerHTML = "";
-      document.getElementById("resumo").innerHTML = "";
-      document.getElementById("contagem").innerHTML = "<strong>0</strong> registros carregados";
-      const status = document.getElementById("status");
-      status.textContent = "";
-      status.className = "status";
+    const form = document.getElementById("busca-form");
+    const btnBuscar = document.getElementById("btn-buscar");
+    const btnLimpar = document.getElementById("btn-limpar");
+    const erroEl = document.getElementById("erro");
+    const statusPill = document.getElementById("status-text");
+    const statusLabel = document.getElementById("status-label");
+    const tbody = document.getElementById("result-body");
+    const descricaoInput = document.getElementById("descricao");
+    const municipioInput = document.getElementById("municipio");
+    const dataFinalInput = document.getElementById("data-final");
+
+    // Define data final padrão = hoje + 30 dias
+    (function initDefaultDate() {
+      const today = new Date();
+      const d = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+      dataFinalInput.value = d.toISOString().slice(0, 10);
+    })();
+
+    function formatDateForPNCP(dateStr) {
+      if (!dateStr) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, "0");
+        const d = String(today.getDate()).padStart(2, "0");
+        return `${y}${m}${d}`;
+      }
+      // dateStr vem em AAAA-MM-DD
+      const [y, m, d] = dateStr.split("-");
+      return `${y}${m}${d}`;
     }
 
-    async function buscar() {
-      const termo = document.getElementById("q").value.toLowerCase().trim();
-      const ano = document.getElementById("ano").value || new Date().getFullYear();
-      const modalidade = document.getElementById("modalidade").value || 8;
-      let paginas = parseInt(document.getElementById("paginas").value || "1", 10);
-      if (paginas < 1) paginas = 1;
-      if (paginas > 30) paginas = 30;
+    function formatDateDisplay(dateTimeStr) {
+      if (!dateTimeStr) return "-";
+      const date = new Date(dateTimeStr);
+      if (isNaN(date.getTime())) return dateTimeStr;
+      return date.toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
 
-      const status = document.getElementById("status");
-      const lista = document.getElementById("lista");
-      const resumo = document.getElementById("resumo");
-      const contagemSpan = document.getElementById("contagem");
+    function formatCurrencyBRL(value) {
+      if (value == null) return "-";
+      const num = Number(value);
+      if (!isFinite(num) || num === 0) return "-";
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        maximumFractionDigits: 2
+      }).format(num);
+    }
 
-      lista.innerHTML = "";
-      resumo.innerHTML = "";
-      status.textContent = "Consultando PNCP...";
-      status.className = "status";
-
-      const dataInicial = `${ano}0101`;
-      const dataFinal = `${ano}1231`;
-
-      let total = 0;
-      let count = 0;
-      let paginasDeFato = 0;
-
-      try {
-        for (let p = 1; p <= paginas; p++) {
-          const alvo =
-            `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao` +
-            `?dataInicial=${dataInicial}` +
-            `&dataFinal=${dataFinal}` +
-            `&codigoModalidadeContratacao=${encodeURIComponent(modalidade)}` +
-            `&pagina=${p}` +
-            `&tamanhoPagina=${TAMANHO_PAGINA}`;
-
-          const url = `${PROXY}?url=${encodeURIComponent(alvo)}`;
-
-          const resp = await fetch(url);
-          if (resp.status === 204) {
-            // Sem conteúdo para essa página -> parar laço
-            break;
-          }
-          if (!resp.ok) {
-            const txt = await resp.text();
-            console.error("Erro PNCP página", p, txt);
-            throw new Error(`Erro PNCP página ${p}: HTTP ${resp.status}`);
-          }
-
-          const json = await resp.json();
-          const itens = json.data || json || [];
-
-          if (!Array.isArray(itens) || itens.length === 0) {
-            if (p === 1) {
-              // primeira página já vazia -> nada mesmo
-              break;
-            } else {
-              // chegou no fim
-              break;
-            }
-          }
-
-          paginasDeFato++;
-
-          itens.forEach((item) => {
-            const objetoTexto = (item.objeto || item.objetoContratacao || "").toLowerCase();
-            if (termo && !objetoTexto.includes(termo)) return;
-
-            const valor = item.valorTotalEstimado || item.valorEstimado || 0;
-            if (valor > 0) {
-              total += valor;
-              count++;
-            }
-
-            const orgao =
-              (item.orgaoEntidade && item.orgaoEntidade.razaoSocial) ||
-              item.nomeRazaoSocial ||
-              "Órgão não informado";
-
-            const modalidadeNome = item.modalidadeNome || item.modalidadeContratacao || "-";
-
-            lista.innerHTML += `
-              <tr>
-                <td>${orgao}</td>
-                <td>${item.objeto || item.objetoContratacao || "-"}</td>
-                <td><span class="pill">${modalidadeNome}</span></td>
-                <td class="valor">R$ ${valor.toLocaleString("pt-BR")}</td>
-              </tr>
-            `;
-          });
-        }
-
-        contagemSpan.innerHTML = `<strong>${lista.children.length}</strong> registros carregados`;
-
-        if (!lista.children.length) {
-          status.textContent = "Nenhuma licitação encontrada para esse filtro.";
-          status.className = "status";
-          resumo.innerHTML = "";
-          return;
-        }
-
-        if (count > 0) {
-          const media = total / count;
-          resumo.innerHTML = `
-            <span>📊 <strong>Resumo dos registros com valor preenchido</strong> (R$ &gt; 0,00)</span>
-            <span>Registros usados na média: <strong>${count}</strong></span>
-            <span>Valor médio estimado: <span class="valor">R$ ${media.toLocaleString("pt-BR")}</span></span>
-            <span>Soma total: <span class="valor">R$ ${total.toLocaleString("pt-BR")}</span></span>
-          `;
-        } else {
-          resumo.innerHTML = `
-            Nenhum registro retornou valor estimado preenchido (R$ &gt; 0,00).
-          `;
-        }
-
-        status.textContent = `Consulta concluída. Páginas lidas: ${paginasDeFato}.`;
-        status.className = "status ok";
-      } catch (e) {
-        console.error(e);
-        status.textContent = "Erro ao consultar a API (proxy / PNCP). Veja o console do navegador para detalhes.";
-        status.className = "status err";
+    function setLoading(loading, label) {
+      if (loading) {
+        btnBuscar.disabled = true;
+        statusPill.style.display = "inline-flex";
+        statusLabel.textContent = label || "Buscando no PNCP…";
+      } else {
+        btnBuscar.disabled = false;
+        statusPill.style.display = "none";
       }
     }
+
+    function showError(msg) {
+      erroEl.textContent = msg || "";
+    }
+
+    function clearTable() {
+      tbody.innerHTML = "";
+    }
+
+    function showEmpty(msg) {
+      clearTable();
+      const tr = document.createElement("tr");
+      tr.className = "empty-row";
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.innerHTML = msg;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+
+    async function fetchLicitacoesRS({ dataFinal }) {
+      const dataFinalPNCP = formatDateForPNCP(dataFinal);
+
+      const all = [];
+      let pagina = 1;
+      const maxPaginas = 5; // segurança: evita buscar tudo do Brasil se algo sair errado
+      let totalPaginas = 1;
+
+      do {
+        const params = new URLSearchParams();
+        params.set("dataFinal", dataFinalPNCP);
+        params.set("codigoModalidadeContratacao", "6"); // Pregão Eletrônico (tabela de domínio) :contentReference[oaicite:2]{index=2}
+        params.set("uf", "RS"); // apenas Rio Grande do Sul
+        params.set("pagina", String(pagina));
+        params.set("tamanhoPagina", "200");
+
+        const url = `${PROXY_BASE}/v1/contratacoes/proposta?${params.toString()}`;
+
+        const resp = await fetch(url, { headers: { accept: "application/json" } });
+
+        if (resp.status === 204) {
+          // Sem conteúdo
+          break;
+        }
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(
+            `Erro ao consultar proxy/PNCP (HTTP ${resp.status}). Detalhes: ${text}`
+          );
+        }
+
+        const json = await resp.json();
+        const dataArr = json.data || [];
+        all.push(...dataArr);
+
+        totalPaginas = json.totalPaginas || 1;
+        pagina += 1;
+      } while (pagina <= totalPaginas && pagina <= maxPaginas);
+
+      return all;
+    }
+
+    function renderResults(lista, { filtroDescricao, filtroMunicipio }) {
+      clearTable();
+
+      const desc = (filtroDescricao || "").trim().toLowerCase();
+      const mun = (filtroMunicipio || "").trim().toLowerCase();
+
+      const filtrados = lista.filter((item) => {
+        const objeto = (item.objetoCompra || "").toLowerCase();
+        const municipio =
+          (item?.unidadeOrgao?.municipioNome || "").toLowerCase();
+
+        const matchDesc = !desc || objeto.includes(desc);
+        const matchMunicipio = !mun || municipio.includes(mun);
+
+        return matchDesc && matchMunicipio;
+      });
+
+      if (!filtrados.length) {
+        showEmpty(
+          "Nenhuma licitação encontrada com os filtros atuais. Tente ampliar o período ou remover filtros."
+        );
+        return;
+      }
+
+      for (const item of filtrados) {
+        const tr = document.createElement("tr");
+
+        // Órgão
+        const orgaoTd = document.createElement("td");
+        orgaoTd.className = "col-orgao";
+        const orgaoNome = item?.orgaoEntidade?.razaosocial || "-";
+        const modalidade = item.modalidadeNome || "Pregão Eletrônico";
+        orgaoTd.innerHTML = `
+          <div>${orgaoNome}</div>
+          <div class="tags">
+            <span class="tag tag-primary">${modalidade}</span>
+            <span class="tag">PNCP: ${item.numeroControlePNCP || "-"}</span>
+          </div>
+        `;
+        tr.appendChild(orgaoTd);
+
+        // Objeto
+        const objetoTd = document.createElement("td");
+        objetoTd.className = "col-objeto";
+        const objeto = item.objetoCompra || "-";
+        objetoTd.innerHTML = `<span>${objeto}</span>`;
+        tr.appendChild(objetoTd);
+
+        // Município
+        const munTd = document.createElement("td");
+        munTd.className = "col-municipio";
+        const munNome = item?.unidadeOrgao?.municipioNome || "-";
+        const ufSigla = item?.unidadeOrgao?.ufSigla || "RS";
+        munTd.textContent = munNome ? `${munNome} / ${ufSigla}` : `- / ${ufSigla}`;
+        tr.appendChild(munTd);
+
+        // Datas
+        const datasTd = document.createElement("td");
+        datasTd.className = "col-datas";
+        const dtAbertura = formatDateDisplay(item.dataAberturaProposta);
+        const dtEnc = formatDateDisplay(item.dataEncerramentoProposta);
+        datasTd.innerHTML = `${dtAbertura}<br><span style="color:#9ca3af;">até ${dtEnc}</span>`;
+        tr.appendChild(datasTd);
+
+        // Valor
+        const valorTd = document.createElement("td");
+        valorTd.className = "col-valor";
+        valorTd.textContent = formatCurrencyBRL(item.valorTotalEstimado);
+        tr.appendChild(valorTd);
+
+        // Ações
+        const acaoTd = document.createElement("td");
+
+        const btnVer = document.createElement("button");
+        btnVer.type = "button";
+        btnVer.className = "btn-secondary";
+        btnVer.textContent = "Ver licitação";
+        btnVer.onclick = () => {
+          const idPncp = item.numeroControlePNCP;
+          if (!idPncp) {
+            alert("Id PNCP não informado para esta contratação.");
+            return;
+          }
+          const urlPncp = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(
+            idPncp
+          )}`;
+          window.open(urlPncp, "_blank");
+        };
+
+        acaoTd.appendChild(btnVer);
+        tr.appendChild(acaoTd);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      showError("");
+      setLoading(true, "Buscando licitações abertas no PNCP…");
+      clearTable();
+      showEmpty("Buscando dados no PNCP…");
+
+      const filtros = {
+        descricao: descricaoInput.value,
+        municipio: municipioInput.value,
+        dataFinal: dataFinalInput.value
+      };
+
+      try {
+        const lista = await fetchLicitacoesRS({ dataFinal: filtros.dataFinal });
+        renderResults(lista, {
+          filtroDescricao: filtros.descricao,
+          filtroMunicipio: filtros.municipio
+        });
+      } catch (err) {
+        console.error(err);
+        showEmpty("Não foi possível carregar as licitações.");
+        showError(
+          "Erro ao consultar a API (proxy/PNCP). Verifique se o Worker está ativo e a URL está correta."
+        );
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    btnLimpar.addEventListener("click", () => {
+      descricaoInput.value = "";
+      municipioInput.value = "";
+      initDefaultDate();
+      showError("");
+      clearTable();
+      showEmpty(
+        "Filtros limpos. Preencha os campos acima e clique em “Buscar licitações”."
+      );
+    });
   </script>
 </body>
 </html>
