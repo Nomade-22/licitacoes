@@ -433,14 +433,14 @@
 
     <footer>
       Dados oficiais via PNCP – Serviço <code>/v1/contratacoes/proposta</code> – Modalidade:
-      Pregão Eletrônico (cód. 6) :contentReference[oaicite:1]{index=1} –
+      Pregão (cód. 8) :contentReference[oaicite:1]{index=1} –
       proxy: Cloudflare Workers. Desenvolvido para apoiar estudos de mercado e orçamentos.
     </footer>
   </div>
 
   <script>
-    // 🔧 Ajuste aqui se o prefixo do Worker for diferente
-    const PROXY_BASE = "https://pncp-proxy.jhonygui.workers.dev/pncp-consulta";
+    // 👉 O Worker está no formato ?url=...
+    const PROXY = "https://pncp-proxy.jhonygui.workers.dev";
 
     const form = document.getElementById("busca-form");
     const btnBuscar = document.getElementById("btn-buscar");
@@ -453,12 +453,13 @@
     const municipioInput = document.getElementById("municipio");
     const dataFinalInput = document.getElementById("data-final");
 
-    // Define data final padrão = hoje + 30 dias
-    (function initDefaultDate() {
+    // ✅ FUNÇÃO GLOBAL CORRETA (antes dava erro porque não era global)
+    function setDefaultDate() {
       const today = new Date();
       const d = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
       dataFinalInput.value = d.toISOString().slice(0, 10);
-    })();
+    }
+    setDefaultDate();
 
     function formatDateForPNCP(dateStr) {
       if (!dateStr) {
@@ -468,7 +469,6 @@
         const d = String(today.getDate()).padStart(2, "0");
         return `${y}${m}${d}`;
       }
-      // dateStr vem em AAAA-MM-DD
       const [y, m, d] = dateStr.split("-");
       return `${y}${m}${d}`;
     }
@@ -528,40 +528,42 @@
       tbody.appendChild(tr);
     }
 
+    // 🔎 Busca no endpoint /v1/contratacoes/proposta via proxy ?url=
     async function fetchLicitacoesRS({ dataFinal }) {
       const dataFinalPNCP = formatDateForPNCP(dataFinal);
 
       const all = [];
       let pagina = 1;
-      const maxPaginas = 5; // segurança: evita buscar tudo do Brasil se algo sair errado
+      const maxPaginas = 5;
       let totalPaginas = 1;
 
       do {
         const params = new URLSearchParams();
         params.set("dataFinal", dataFinalPNCP);
-        params.set("codigoModalidadeContratacao", "6"); // Pregão Eletrônico (tabela de domínio) :contentReference[oaicite:2]{index=2}
-        params.set("uf", "RS"); // apenas Rio Grande do Sul
+        params.set("codigoModalidadeContratacao", "8"); // pregão (exemplo manual)
+        params.set("uf", "RS");
         params.set("pagina", String(pagina));
-        params.set("tamanhoPagina", "200");
+        params.set("tamanhoPagina", "100");
 
-        const url = `${PROXY_BASE}/v1/contratacoes/proposta?${params.toString()}`;
+        const target = `https://pncp.gov.br/api/consulta/v1/contratacoes/proposta?${params.toString()}`;
+        const url = `${PROXY}?url=${encodeURIComponent(target)}`;
+
+        console.log("Chamando PNCP via proxy:", url);
 
         const resp = await fetch(url, { headers: { accept: "application/json" } });
 
         if (resp.status === 204) {
-          // Sem conteúdo
           break;
         }
 
         if (!resp.ok) {
           const text = await resp.text();
-          throw new Error(
-            `Erro ao consultar proxy/PNCP (HTTP ${resp.status}). Detalhes: ${text}`
-          );
+          throw new Error(`Erro ao consultar proxy/PNCP (HTTP ${resp.status}). ${text}`);
         }
 
         const json = await resp.json();
         const dataArr = json.data || [];
+
         all.push(...dataArr);
 
         totalPaginas = json.totalPaginas || 1;
@@ -601,8 +603,8 @@
         // Órgão
         const orgaoTd = document.createElement("td");
         orgaoTd.className = "col-orgao";
-        const orgaoNome = item?.orgaoEntidade?.razaosocial || "-";
-        const modalidade = item.modalidadeNome || "Pregão Eletrônico";
+        const orgaoNome = item?.orgaoEntidade?.razaoSocial || "-";
+        const modalidade = item.modalidadeNome || "Pregão";
         orgaoTd.innerHTML = `
           <div>${orgaoNome}</div>
           <div class="tags">
@@ -643,23 +645,17 @@
 
         // Ações
         const acaoTd = document.createElement("td");
-
         const btnVer = document.createElement("button");
         btnVer.type = "button";
         btnVer.className = "btn-secondary";
         btnVer.textContent = "Ver licitação";
         btnVer.onclick = () => {
           const idPncp = item.numeroControlePNCP;
-          if (!idPncp) {
-            alert("Id PNCP não informado para esta contratação.");
-            return;
-          }
-          const urlPncp = `https://pncp.gov.br/app/editais?q=${encodeURIComponent(
-            idPncp
-          )}`;
+          const urlPncp = idPncp
+            ? `https://pncp.gov.br/app/editais?q=${encodeURIComponent(idPncp)}`
+            : "https://pncp.gov.br/app/editais";
           window.open(urlPncp, "_blank");
         };
-
         acaoTd.appendChild(btnVer);
         tr.appendChild(acaoTd);
 
@@ -700,7 +696,7 @@
     btnLimpar.addEventListener("click", () => {
       descricaoInput.value = "";
       municipioInput.value = "";
-      initDefaultDate();
+      setDefaultDate();
       showError("");
       clearTable();
       showEmpty(
