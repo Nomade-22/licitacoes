@@ -1,708 +1,757 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <title>Buscador de Licitações – RS (PNCP)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Radar Licitações (TCE-RS) — Busca</title>
+  <meta name="description" content="Busca local no CSV consolidado de licitações do TCE-RS (Dados Abertos). Baixa ZIP, extrai LICITACAO e permite filtrar." />
+  <meta name="theme-color" content="#071427" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Libs (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
   <style>
-    :root {
-      --bg: #050816;
-      --bg-alt: #0b1020;
-      --bg-card: #111827;
-      --primary: #2563eb;
-      --primary-soft: rgba(37, 99, 235, 0.15);
-      --text: #f9fafb;
-      --muted: #9ca3af;
-      --border: #1f2937;
-      --danger: #f97373;
-      --radius-lg: 14px;
-      --radius-md: 10px;
-      --radius-sm: 6px;
-      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.45);
+    :root{
+      --bg:#071427;
+      --panel:#0b1f3a;
+      --panel2:#0b2347;
+      --text:#eaf1ff;
+      --muted:#b9c7e6;
+      --line:rgba(255,255,255,.10);
+      --good:#2ee6a6;
+      --warn:#ffd27a;
+      --bad:#ff6b8b;
+      --blue:#56a3ff;
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --r:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 700px at 15% -10%, rgba(86,163,255,.18), transparent 60%),
+                  radial-gradient(900px 600px at 85% 0%, rgba(46,230,166,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    a{color:inherit}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    header{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:14px 16px;border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border-radius:var(--r); box-shadow:var(--shadow);
+      position:sticky;top:12px;z-index:5;backdrop-filter: blur(10px);
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:40px;height:40px;border-radius:14px;
+      background:linear-gradient(135deg, rgba(86,163,255,.9), rgba(46,230,166,.85));
+      box-shadow:0 10px 30px rgba(86,163,255,.20);
+    }
+    .brand h1{font-size:14px;margin:0;font-weight:800;letter-spacing:.2px}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+    .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;border-radius:14px;
+      font-weight:700;font-size:12px;
+      cursor:pointer;
+      transition:.15s transform,.15s background;
+      user-select:none;
+    }
+    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.09)}
+    .btn.primary{
+      background:linear-gradient(135deg, rgba(86,163,255,.95), rgba(46,230,166,.85));
+      border-color:transparent;
+      color:#041023;
+    }
+    .btn.danger{border-color:rgba(255,107,139,.35);background:rgba(255,107,139,.10)}
+    .grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:14px;margin-top:14px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:12px 14px;border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .card .hd h2{margin:0;font-size:13px}
+    .card .bd{padding:14px}
+    .row{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
+    @media (max-width:640px){.row{grid-template-columns:1fr}}
+    label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin:0 0 6px}
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      outline:none;
+      font-family:inherit;
+    }
+    input::placeholder{color:rgba(185,199,230,.65)}
+    .hint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:10px}
+    .kpis{display:grid;grid-template-columns: repeat(4, 1fr);gap:10px}
+    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(0,0,0,.16);
+    }
+    .kpi .t{font-size:11px;color:var(--muted);font-weight:700}
+    .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
+    .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      font-size:12px;color:var(--muted);
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.15);
+      white-space:nowrap;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
+    .dot.ok{background:var(--good)}
+    .dot.bad{background:var(--bad)}
+    .progress{
+      height:10px;border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;border:1px solid var(--line);
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(86,163,255,.95), rgba(46,230,166,.85));
+      transition:width .2s ease;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    .table-wrap{overflow:auto;border-top:1px solid var(--line)}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{
+      position:sticky;top:0;z-index:1;
+      background:rgba(11,31,58,.95);
+      backdrop-filter: blur(8px);
+      text-align:left;font-size:12px;color:var(--muted);font-weight:800;
+    }
+    td{font-size:12px}
+    .td-strong{font-weight:800}
+    .nowrap{white-space:nowrap}
+    .muted{color:var(--muted)}
+    .mini{font-size:11px;color:rgba(185,199,230,.75)}
+    .right{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.16);
+      font-size:11px;color:var(--muted);font-weight:700;
+    }
+    .chip b{color:var(--text)}
+    .linkbtn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:7px 10px;border-radius:12px;
+      font-weight:800;font-size:11px;
+      cursor:pointer;
     }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #0f172a 0, #020617 50%, #000 100%);
-      color: var(--text);
-      min-height: 100vh;
+    /* Modal */
+    .modal{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);
+      display:none;align-items:center;justify-content:center;padding:16px;z-index:20;
     }
-
-    .wrapper {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 16px 40px;
+    .modal.open{display:flex}
+    .modal .box{
+      width:min(860px, 100%);
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(11,31,58,.98), rgba(7,20,39,.98));
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
-
-    header {
-      text-align: center;
-      margin-bottom: 24px;
+    .modal .box .hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+    .modal .box .hd h3{margin:0;font-size:13px}
+    .modal .box .bd{padding:14px}
+    .kv{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
+    @media (max-width:720px){.kv{grid-template-columns:1fr}}
+    .kv .item{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.16);
+      border-radius:16px;
+      padding:10px 12px;
     }
-
-    header h1 {
-      font-size: clamp(1.5rem, 2.4vw, 2.1rem);
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    header h1 span {
-      font-size: 1.5rem;
-    }
-
-    header p {
-      margin-top: 6px;
-      font-size: 0.93rem;
-      color: var(--muted);
-    }
-
-    .badge-uf {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(37, 99, 235, 0.1);
-      border: 1px solid rgba(37, 99, 235, 0.4);
-      font-size: 0.78rem;
-      margin-top: 8px;
-    }
-
-    .badge-uf strong {
-      color: var(--primary);
-    }
-
-    .card {
-      background: linear-gradient(145deg, #020617 0, #020617 40%, #020617 60%, #020617 100%);
-      border-radius: 20px;
-      border: 1px solid rgba(148, 163, 184, 0.15);
-      box-shadow: var(--shadow-soft);
-      padding: 18px 18px 14px;
-      backdrop-filter: blur(14px);
-    }
-
-    .filters-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 12px;
-      align-items: flex-end;
-      margin-bottom: 10px;
-    }
-
-    @media (max-width: 900px) {
-      .filters-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field label {
-      font-size: 0.78rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .input,
-    .select {
-      width: 100%;
-      padding: 10px 11px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text);
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-    }
-
-    .input::placeholder {
-      color: #6b7280;
-    }
-
-    .input:focus,
-    .select:focus {
-      border-color: rgba(59, 130, 246, 0.85);
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.6);
-      background: rgba(15, 23, 42, 1);
-    }
-
-    .select[disabled] {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 11px 18px;
-      border-radius: var(--radius-md);
-      border: none;
-      cursor: pointer;
-      font-size: 0.92rem;
-      font-weight: 600;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: #f9fafb;
-      box-shadow: 0 14px 24px rgba(37, 99, 235, 0.35);
-      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
-      white-space: nowrap;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 18px 28px rgba(37, 99, 235, 0.45);
-      filter: brightness(1.05);
-    }
-
-    .btn:active {
-      transform: translateY(0);
-      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.85);
-      filter: brightness(0.97);
-    }
-
-    .btn[disabled] {
-      opacity: 0.6;
-      cursor: wait;
-      box-shadow: none;
-      transform: none;
-    }
-
-    .btn-secondary {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(55, 65, 81, 0.8);
-      box-shadow: none;
-      font-weight: 500;
-      padding-inline: 10px;
-    }
-
-    .btn-secondary:hover {
-      filter: brightness(1.08);
-    }
-
-    .actions-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin: 10px 2px 4px;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 9px;
-      border-radius: 999px;
-      background: var(--primary-soft);
-      border: 1px solid rgba(37, 99, 235, 0.6);
-      font-size: 0.77rem;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.22);
-    }
-
-    .error {
-      margin: 4px 2px 0;
-      font-size: 0.8rem;
-      color: var(--danger);
-      min-height: 1em;
-    }
-
-    .table-wrapper {
-      margin-top: 10px;
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(31, 41, 55, 0.9);
-      background: radial-gradient(circle at top, #111827 0, #020617 45%, #020617 100%);
-      overflow: hidden;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.86rem;
-    }
-
-    thead {
-      background: rgba(15, 23, 42, 0.95);
-    }
-
-    th,
-    td {
-      padding: 9px 10px;
-      text-align: left;
-      border-bottom: 1px solid rgba(31, 41, 55, 0.75);
-    }
-
-    th {
-      font-weight: 600;
-      font-size: 0.78rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #9ca3af;
-      white-space: nowrap;
-    }
-
-    tbody tr:nth-child(even) {
-      background: rgba(15, 23, 42, 0.7);
-    }
-
-    tbody tr:hover {
-      background: rgba(37, 99, 235, 0.07);
-    }
-
-    .col-orgao {
-      max-width: 210px;
-    }
-
-    .col-objeto {
-      max-width: 430px;
-    }
-
-    .col-objeto span {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .col-municipio {
-      white-space: nowrap;
-    }
-
-    .col-datas {
-      white-space: nowrap;
-    }
-
-    .col-valor {
-      white-space: nowrap;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 2px;
-      font-size: 0.74rem;
-    }
-
-    .tag {
-      padding: 2px 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      color: #9ca3af;
-      background: rgba(15, 23, 42, 0.95);
-    }
-
-    .tag-primary {
-      border-color: rgba(37, 99, 235, 0.7);
-      color: #bfdbfe;
-      background: rgba(15, 23, 42, 0.98);
-    }
-
-    .empty-row td {
-      text-align: center;
-      padding: 24px 10px;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    footer {
-      margin-top: 18px;
-      text-align: center;
-      font-size: 0.75rem;
-      color: #6b7280;
-    }
-
-    footer a {
-      color: #93c5fd;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
+    .kv .k{font-size:11px;color:var(--muted);font-weight:800}
+    .kv .v{font-size:12px;margin-top:6px;word-break:break-word}
+    footer{padding:18px 4px;color:rgba(185,199,230,.85);font-size:12px}
+    code{color:#d6e7ff}
   </style>
 </head>
 <body>
-  <div class="wrapper">
+  <div class="wrap">
     <header>
-      <h1>
-        <span>📊</span>
-        Buscador de Licitações Abertas – PNCP
-      </h1>
-      <p>Consulta rápida a pregões eletrônicos com recebimento de propostas em aberto no PNCP.</p>
-      <div class="badge-uf">
-        <strong>UF: RS</strong>
-        <span>• apenas licitações de órgãos do Rio Grande do Sul</span>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Radar Licitações (TCE-RS) — Busca local</h1>
+          <p>Baixa o ZIP do Dados Abertos, extrai <b>LICITACAO</b> e permite pesquisar.</p>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="pill" id="statusPill"><span class="dot" id="statusDot"></span><span id="statusText">Aguardando</span></span>
+        <button class="btn" id="btnExport" disabled>Exportar resultado (CSV)</button>
+        <button class="btn primary" id="btnLoad">Carregar dados</button>
+        <button class="btn danger" id="btnClear">Limpar</button>
       </div>
     </header>
 
-    <section class="card">
-      <form id="busca-form">
-        <div class="filters-grid">
-          <div class="field">
-            <label for="descricao">Palavra-chave no objeto</label>
-            <input
-              id="descricao"
-              class="input"
-              type="text"
-              placeholder="Ex: manutenção elétrica, pavimentação, alimentação escolar..."
-            />
-          </div>
-
-          <div class="field">
-            <label for="municipio">Município (texto livre)</label>
-            <input
-              id="municipio"
-              class="input"
-              type="text"
-              placeholder="Ex: Porto Alegre, Caxias..."
-            />
-          </div>
-
-          <div class="field">
-            <label for="data-final">Recebendo propostas até</label>
-            <input id="data-final" class="input" type="date" />
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <h2>Filtros</h2>
+          <div class="right">
+            <span class="chip">Ano <b id="chipAno">2025</b></span>
+            <span class="chip">Carregados <b id="chipLoaded">0</b></span>
+            <span class="chip">Exibindo <b id="chipShown">0</b></span>
           </div>
         </div>
-
-        <div class="actions-bar">
-          <div style="display:flex; gap:6px; align-items:center;">
-            <button type="submit" id="btn-buscar" class="btn">
-              🔍 Buscar licitações
-            </button>
-            <button type="button" id="btn-limpar" class="btn-secondary">
-              Limpar filtros
-            </button>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label for="year">Ano (consolidado)</label>
+              <select id="year">
+                <option value="2025" selected>2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+              </select>
+            </div>
+            <div>
+              <label for="q">Busca livre (objeto, órgão, município, etc.)</label>
+              <input id="q" placeholder="Ex: pintura, reforma, Montenegro, Corsan..." />
+            </div>
           </div>
-          <div>
-            <span id="status-text" class="status-pill" style="display:none;">
-              <span class="status-dot"></span>
-              <span id="status-label">Buscando no PNCP…</span>
-            </span>
+
+          <div class="row" style="margin-top:10px">
+            <div>
+              <label for="orgao">Filtro por órgão (contém)</label>
+              <input id="orgao" placeholder="Ex: PM DE MONTENEGRO, CORSAN..." />
+            </div>
+            <div>
+              <label for="municipio">Filtro por município (contém)</label>
+              <input id="municipio" placeholder="Ex: Porto Alegre, Montenegro..." />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div>
+              <label for="modalidade">Modalidade / tipo (contém)</label>
+              <input id="modalidade" placeholder="Ex: Pregão, Concorrência, Dispensa..." />
+            </div>
+            <div>
+              <label for="limit">Limite de resultados (para ficar leve)</label>
+              <select id="limit">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Progresso de download/extração</label>
+            <div class="progress"><div id="bar"></div></div>
+            <div class="hint" id="hint">
+              Fonte: Dados Abertos TCE-RS (CKAN). Exemplo de URL (ano 2025): <code>https://dados.tce.rs.gov.br/dados/licitacon/licitacao/ano/2025.csv.zip</code>.
+            </div>
           </div>
         </div>
-        <div id="erro" class="error"></div>
-      </form>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-          <tr>
-            <th>Órgão</th>
-            <th>Objeto</th>
-            <th>Município</th>
-            <th>Datas (abertura / encerramento)</th>
-            <th>Valor estimado</th>
-            <th>Ações</th>
-          </tr>
-          </thead>
-          <tbody id="result-body">
-          <tr class="empty-row">
-            <td colspan="6">
-              Preencha os filtros acima e clique em <strong>“Buscar licitações”</strong> para ver os resultados.
-            </td>
-          </tr>
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap">Ações</th>
+                <th>Órgão / Entidade</th>
+                <th>Município</th>
+                <th>Objeto (resumo)</th>
+                <th class="nowrap">Datas (quando houver)</th>
+                <th class="nowrap">Modalidade</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr>
+                <td colspan="6" class="muted">Carregue os dados para começar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </section>
+
+      <div class="card">
+        <div class="hd"><h2>Resumo</h2></div>
+        <div class="bd">
+          <div class="kpis">
+            <div class="kpi"><div class="t">Total carregado</div><div class="v" id="kTotal">0</div></div>
+            <div class="kpi"><div class="t">Encontrados</div><div class="v" id="kFound">0</div></div>
+            <div class="kpi"><div class="t">Ano selecionado</div><div class="v" id="kYear">2025</div></div>
+            <div class="kpi"><div class="t">Status</div><div class="v" id="kStatus">—</div></div>
+          </div>
+
+          <div class="hint" style="margin-top:12px">
+            <b>Como funciona:</b> o sistema baixa o ZIP do ano, abre no navegador e procura um arquivo cujo nome contenha “LICITACAO”.
+            Depois disso, você filtra localmente (sem servidor).
+            <br><br>
+            <b>Dica:</b> se ficar pesado, reduza o “Limite de resultados” e use filtros mais específicos.
+          </div>
+
+          <div class="hint" style="margin-top:12px">
+            <b>Notas:</b><br>
+            • Os nomes das colunas variam conforme o leiaute do LicitaCon. Este HTML tenta achar automaticamente campos “órgão/município/objeto/modalidade/datas”.<br>
+            • Se algum campo não aparecer, ainda dá para usar a <b>Busca livre</b> (varre várias colunas).<br>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <footer>
-      Dados oficiais via PNCP – Serviço <code>/v1/contratacoes/proposta</code> – Modalidade:
-      Pregão (cód. 8) :contentReference[oaicite:1]{index=1} –
-      proxy: Cloudflare Workers. Desenvolvido para apoiar estudos de mercado e orçamentos.
+      Dados: portal de Dados Abertos do TCE-RS (CKAN). Este app roda 100% local no navegador.
     </footer>
   </div>
 
-  <script>
-    // 👉 O Worker está no formato ?url=...
-    const PROXY = "https://pncp-proxy.jhonygui.workers.dev";
+  <!-- Modal detalhes -->
+  <div class="modal" id="modal">
+    <div class="box">
+      <div class="hd">
+        <h3 id="mTitle">Detalhes</h3>
+        <div class="right">
+          <button class="linkbtn" id="btnCopy">Copiar JSON</button>
+          <button class="linkbtn" id="btnClose">Fechar</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="kv" id="mKV"></div>
+      </div>
+    </div>
+  </div>
 
-    const form = document.getElementById("busca-form");
-    const btnBuscar = document.getElementById("btn-buscar");
-    const btnLimpar = document.getElementById("btn-limpar");
-    const erroEl = document.getElementById("erro");
-    const statusPill = document.getElementById("status-text");
-    const statusLabel = document.getElementById("status-label");
-    const tbody = document.getElementById("result-body");
-    const descricaoInput = document.getElementById("descricao");
-    const municipioInput = document.getElementById("municipio");
-    const dataFinalInput = document.getElementById("data-final");
+<script>
+/* ===========================
+   Radar Licitações — TCE-RS
+   - Baixa ZIP do ano
+   - Extrai CSV "LICITACAO"
+   - Indexa em memória
+   - Filtra e mostra
+=========================== */
 
-    // ✅ FUNÇÃO GLOBAL CORRETA (antes dava erro porque não era global)
-    function setDefaultDate() {
-      const today = new Date();
-      const d = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-      dataFinalInput.value = d.toISOString().slice(0, 10);
+const el = (id)=>document.getElementById(id);
+const state = {
+  loaded: false,
+  rows: [],
+  headers: [],
+  lastFiltered: [],
+  lastDetail: null,
+};
+
+const statusDot = el("statusDot");
+const statusText = el("statusText");
+const bar = el("bar");
+
+function setStatus(kind, text){
+  statusDot.className = "dot" + (kind === "ok" ? " ok" : kind === "bad" ? " bad" : "");
+  statusText.textContent = text;
+  el("kStatus").textContent = text;
+}
+
+function setProgress(p){
+  const v = Math.max(0, Math.min(100, p));
+  bar.style.width = v.toFixed(0) + "%";
+}
+
+function zipUrlForYear(year){
+  // Padrão observado no recurso 2025: /dados/licitacon/licitacao/ano/2025.csv.zip
+  return `https://dados.tce.rs.gov.br/dados/licitacon/licitacao/ano/${encodeURIComponent(year)}.csv.zip`;
+}
+
+function norm(s){
+  return (s ?? "").toString().normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase().trim();
+}
+
+function pickField(headers, candidates){
+  // candidates: array de substrings normalizadas
+  const hn = headers.map(h => ({raw:h, n:norm(h)}));
+  for (const c of candidates){
+    const found = hn.find(x => x.n.includes(c));
+    if(found) return found.raw;
+  }
+  return null;
+}
+
+function safeGet(obj, key){
+  const v = obj?.[key];
+  if(v === null || v === undefined) return "";
+  return ("" + v).trim();
+}
+
+function buildSmartMapping(headers){
+  // Tentativa de encontrar colunas comuns no leiaute:
+  const map = {};
+  map.orgao = pickField(headers, ["nm_orgao", "orgao", "entidade", "unidade", "cd_orgao"]);
+  map.municipio = pickField(headers, ["municipio", "cidade", "nm_municipio"]);
+  map.objeto = pickField(headers, ["objeto", "ds_objeto", "descricao", "finalidade", "ds_licitacao"]);
+  map.modalidade = pickField(headers, ["modalidade", "tp_modalidade", "tipo_modalidade", "ds_modalidade"]);
+  map.dataAbertura = pickField(headers, ["dt_abertura", "data_abertura", "abertura"]);
+  map.dataPublicacao = pickField(headers, ["dt_publicacao", "data_publicacao", "publicacao"]);
+  map.numero = pickField(headers, ["nr_licitacao", "numero", "nr_processo", "processo", "cd_licitacao"]);
+  return map;
+}
+
+function rowToSearchBlob(row, headers){
+  // Busca livre: junta valores das colunas mais relevantes (ou todas, se quiser)
+  // Para equilibrar performance, prioriza as 25 primeiras colunas e as que tiverem "objeto", "orgao", etc.
+  const hn = headers.map(h => ({h, n:norm(h)}));
+  const priority = hn
+    .filter(x => /objeto|orgao|entidade|municip|modal|process|licit|descr|final|abert|public/.test(x.n))
+    .map(x => x.h);
+
+  const merged = new Set([...priority, ...headers.slice(0, 25)]);
+  let out = "";
+  for (const h of merged){
+    const v = safeGet(row, h);
+    if(v) out += " " + v;
+  }
+  return norm(out);
+}
+
+function applyFilters(){
+  if(!state.loaded){
+    return;
+  }
+
+  const q = norm(el("q").value);
+  const orgao = norm(el("orgao").value);
+  const municipio = norm(el("municipio").value);
+  const modalidade = norm(el("modalidade").value);
+  const limit = parseInt(el("limit").value || "100", 10);
+
+  const headers = state.headers;
+  const map = state.map;
+
+  let found = [];
+  for (const r of state.rows){
+    const org = norm(safeGet(r, map.orgao));
+    const mun = norm(safeGet(r, map.municipio));
+    const mod = norm(safeGet(r, map.modalidade));
+
+    if(orgao && !org.includes(orgao)) continue;
+    if(municipio && !mun.includes(municipio)) continue;
+    if(modalidade && !mod.includes(modalidade)) continue;
+
+    if(q){
+      const blob = r.__blob || (r.__blob = rowToSearchBlob(r, headers));
+      if(!blob.includes(q)) continue;
     }
-    setDefaultDate();
 
-    function formatDateForPNCP(dateStr) {
-      if (!dateStr) {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, "0");
-        const d = String(today.getDate()).padStart(2, "0");
-        return `${y}${m}${d}`;
+    found.push(r);
+    if(found.length >= limit) break;
+  }
+
+  state.lastFiltered = found;
+  el("kFound").textContent = found.length.toLocaleString("pt-BR");
+  el("chipShown").textContent = found.length.toLocaleString("pt-BR");
+  renderTable(found);
+
+  el("btnExport").disabled = found.length === 0;
+}
+
+function renderTable(rows){
+  const tb = el("tbody");
+  tb.innerHTML = "";
+
+  if(!rows.length){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="6" class="muted">Nenhum resultado com os filtros atuais.</td>`;
+    tb.appendChild(tr);
+    return;
+  }
+
+  const map = state.map;
+
+  for(const r of rows){
+    const orgao = safeGet(r, map.orgao) || "—";
+    const municipio = safeGet(r, map.municipio) || "—";
+    const objeto = safeGet(r, map.objeto) || "—";
+    const modalidade = safeGet(r, map.modalidade) || "—";
+    const d1 = safeGet(r, map.dataPublicacao);
+    const d2 = safeGet(r, map.dataAbertura);
+    const datas = [d1 ? `Pub: ${d1}` : "", d2 ? `Abert: ${d2}` : ""].filter(Boolean).join(" • ") || "—";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="nowrap">
+        <button class="linkbtn" data-act="detalhes">Detalhes</button>
+      </td>
+      <td><div class="td-strong">${escapeHtml(orgao)}</div>
+          <div class="mini">${escapeHtml(safeGet(r, map.numero) || "")}</div>
+      </td>
+      <td>${escapeHtml(municipio)}</td>
+      <td>${escapeHtml(objeto).slice(0, 240)}${objeto.length>240 ? "…" : ""}</td>
+      <td class="nowrap">${escapeHtml(datas)}</td>
+      <td class="nowrap">${escapeHtml(modalidade)}</td>
+    `;
+    tr.querySelector('[data-act="detalhes"]').addEventListener("click", ()=>openDetails(r));
+    tb.appendChild(tr);
+  }
+}
+
+function escapeHtml(s){
+  return (s ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+async function loadData(){
+  const year = el("year").value;
+  el("chipAno").textContent = year;
+  el("kYear").textContent = year;
+
+  const url = zipUrlForYear(year);
+
+  setStatus("", "Baixando ZIP…");
+  setProgress(5);
+
+  // Baixa com progresso (quando suportado)
+  const resp = await fetch(url);
+  if(!resp.ok){
+    setStatus("bad", `Falha ao baixar (${resp.status})`);
+    setProgress(0);
+    throw new Error("Falha no download: " + resp.status);
+  }
+
+  const contentLength = resp.headers.get("content-length");
+  const total = contentLength ? parseInt(contentLength, 10) : null;
+  let loaded = 0;
+
+  const reader = resp.body?.getReader?.();
+  let chunks = [];
+
+  if(reader){
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      chunks.push(value);
+      loaded += value.byteLength;
+      if(total){
+        const p = 5 + (loaded/total)*55;
+        setProgress(p);
+        el("statusText").textContent = `Baixando ZIP… ${(loaded/1024/1024).toFixed(1)} MB`;
+      }else{
+        setProgress(30);
       }
-      const [y, m, d] = dateStr.split("-");
-      return `${y}${m}${d}`;
     }
+  }else{
+    // Fallback
+    const buf = await resp.arrayBuffer();
+    chunks = [new Uint8Array(buf)];
+    loaded = buf.byteLength;
+    setProgress(60);
+  }
 
-    function formatDateDisplay(dateTimeStr) {
-      if (!dateTimeStr) return "-";
-      const date = new Date(dateTimeStr);
-      if (isNaN(date.getTime())) return dateTimeStr;
-      return date.toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
+  setStatus("", "Abrindo ZIP…");
+  setProgress(62);
 
-    function formatCurrencyBRL(value) {
-      if (value == null) return "-";
-      const num = Number(value);
-      if (!isFinite(num) || num === 0) return "-";
-      return new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-        maximumFractionDigits: 2
-      }).format(num);
-    }
+  // Junta chunks
+  const zipData = concatUint8(chunks);
+  const zip = await JSZip.loadAsync(zipData);
 
-    function setLoading(loading, label) {
-      if (loading) {
-        btnBuscar.disabled = true;
-        statusPill.style.display = "inline-flex";
-        statusLabel.textContent = label || "Buscando no PNCP…";
-      } else {
-        btnBuscar.disabled = false;
-        statusPill.style.display = "none";
-      }
-    }
+  setStatus("", "Procurando arquivo LICITACAO…");
+  setProgress(68);
 
-    function showError(msg) {
-      erroEl.textContent = msg || "";
-    }
+  // Procura o CSV "LICITACAO" dentro do zip
+  const fileName = Object.keys(zip.files).find(name => {
+    const n = norm(name);
+    return n.endsWith(".csv") && n.includes("licitacao");
+  });
 
-    function clearTable() {
-      tbody.innerHTML = "";
-    }
+  if(!fileName){
+    setStatus("bad", "Não achei o CSV LICITACAO no ZIP.");
+    setProgress(0);
+    throw new Error("CSV LICITACAO não encontrado.");
+  }
 
-    function showEmpty(msg) {
-      clearTable();
-      const tr = document.createElement("tr");
-      tr.className = "empty-row";
-      const td = document.createElement("td");
-      td.colSpan = 6;
-      td.innerHTML = msg;
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-    }
+  setStatus("", "Extraindo CSV…");
+  setProgress(74);
 
-    // 🔎 Busca no endpoint /v1/contratacoes/proposta via proxy ?url=
-    async function fetchLicitacoesRS({ dataFinal }) {
-      const dataFinalPNCP = formatDateForPNCP(dataFinal);
+  const csvText = await zip.files[fileName].async("string");
 
-      const all = [];
-      let pagina = 1;
-      const maxPaginas = 5;
-      let totalPaginas = 1;
+  setStatus("", "Lendo CSV (isso pode demorar)…");
+  setProgress(78);
 
-      do {
-        const params = new URLSearchParams();
-        params.set("dataFinal", dataFinalPNCP);
-        params.set("codigoModalidadeContratacao", "8"); // pregão (exemplo manual)
-        params.set("uf", "RS");
-        params.set("pagina", String(pagina));
-        params.set("tamanhoPagina", "100");
+  // PapaParse
+  const parsed = Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: false,
+  });
 
-        const target = `https://pncp.gov.br/api/consulta/v1/contratacoes/proposta?${params.toString()}`;
-        const url = `${PROXY}?url=${encodeURIComponent(target)}`;
+  if(parsed.errors?.length){
+    console.warn("Erros parse CSV:", parsed.errors.slice(0,5));
+  }
 
-        console.log("Chamando PNCP via proxy:", url);
+  const rows = parsed.data || [];
+  const headers = parsed.meta?.fields || Object.keys(rows[0] || {});
 
-        const resp = await fetch(url, { headers: { accept: "application/json" } });
+  state.rows = rows;
+  state.headers = headers;
+  state.map = buildSmartMapping(headers);
+  state.loaded = true;
 
-        if (resp.status === 204) {
-          break;
-        }
+  el("chipLoaded").textContent = rows.length.toLocaleString("pt-BR");
+  el("kTotal").textContent = rows.length.toLocaleString("pt-BR");
 
-        if (!resp.ok) {
-          const text = await resp.text();
-          throw new Error(`Erro ao consultar proxy/PNCP (HTTP ${resp.status}). ${text}`);
-        }
+  setStatus("ok", "Dados carregados");
+  setProgress(100);
 
-        const json = await resp.json();
-        const dataArr = json.data || [];
+  applyFilters();
+}
 
-        all.push(...dataArr);
+function concatUint8(arrs){
+  const total = arrs.reduce((s,a)=>s + a.byteLength, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for(const a of arrs){
+    out.set(a, off);
+    off += a.byteLength;
+  }
+  return out;
+}
 
-        totalPaginas = json.totalPaginas || 1;
-        pagina += 1;
-      } while (pagina <= totalPaginas && pagina <= maxPaginas);
+/* ===== Modal Detalhes ===== */
+function openDetails(row){
+  state.lastDetail = row;
 
-      return all;
-    }
+  const keys = Object.keys(row).filter(k => k !== "__blob");
+  // Mostra primeiro campos prováveis e depois o resto
+  const map = state.map;
+  const first = [map.numero, map.orgao, map.municipio, map.modalidade, map.dataPublicacao, map.dataAbertura, map.objeto]
+    .filter(Boolean);
 
-    function renderResults(lista, { filtroDescricao, filtroMunicipio }) {
-      clearTable();
+  const ordered = [...new Set([...first, ...keys])];
 
-      const desc = (filtroDescricao || "").trim().toLowerCase();
-      const mun = (filtroMunicipio || "").trim().toLowerCase();
+  el("mTitle").textContent = "Detalhes da licitação (CSV)";
+  const kv = el("mKV");
+  kv.innerHTML = "";
 
-      const filtrados = lista.filter((item) => {
-        const objeto = (item.objetoCompra || "").toLowerCase();
-        const municipio =
-          (item?.unidadeOrgao?.municipioNome || "").toLowerCase();
+  for(const k of ordered){
+    const v = safeGet(row, k);
+    if(!v) continue;
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`;
+    kv.appendChild(div);
+    if(kv.childElementCount >= 60) break; // evita modal gigante
+  }
 
-        const matchDesc = !desc || objeto.includes(desc);
-        const matchMunicipio = !mun || municipio.includes(mun);
+  el("modal").classList.add("open");
+}
 
-        return matchDesc && matchMunicipio;
-      });
+function closeModal(){
+  el("modal").classList.remove("open");
+}
+el("btnClose").addEventListener("click", closeModal);
+el("modal").addEventListener("click", (e)=>{ if(e.target === el("modal")) closeModal(); });
 
-      if (!filtrados.length) {
-        showEmpty(
-          "Nenhuma licitação encontrada com os filtros atuais. Tente ampliar o período ou remover filtros."
-        );
-        return;
-      }
+el("btnCopy").addEventListener("click", async ()=>{
+  if(!state.lastDetail) return;
+  const clean = {...state.lastDetail};
+  delete clean.__blob;
+  const txt = JSON.stringify(clean, null, 2);
+  try{
+    await navigator.clipboard.writeText(txt);
+    setStatus("ok","JSON copiado");
+    setTimeout(()=>setStatus("ok","Dados carregados"), 1200);
+  }catch{
+    alert("Não consegui copiar automaticamente. Seu navegador bloqueou.");
+  }
+});
 
-      for (const item of filtrados) {
-        const tr = document.createElement("tr");
+/* ===== Export CSV do resultado ===== */
+el("btnExport").addEventListener("click", ()=>{
+  if(!state.lastFiltered?.length) return;
+  const clean = state.lastFiltered.map(r => {
+    const o = {...r};
+    delete o.__blob;
+    return o;
+  });
+  const csv = Papa.unparse(clean);
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `licitacoes_resultado_${el("year").value}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
 
-        // Órgão
-        const orgaoTd = document.createElement("td");
-        orgaoTd.className = "col-orgao";
-        const orgaoNome = item?.orgaoEntidade?.razaoSocial || "-";
-        const modalidade = item.modalidadeNome || "Pregão";
-        orgaoTd.innerHTML = `
-          <div>${orgaoNome}</div>
-          <div class="tags">
-            <span class="tag tag-primary">${modalidade}</span>
-            <span class="tag">PNCP: ${item.numeroControlePNCP || "-"}</span>
-          </div>
-        `;
-        tr.appendChild(orgaoTd);
+/* ===== Events ===== */
+["q","orgao","municipio","modalidade","limit"].forEach(id=>{
+  el(id).addEventListener("input", debounce(applyFilters, 220));
+  el(id).addEventListener("change", applyFilters);
+});
 
-        // Objeto
-        const objetoTd = document.createElement("td");
-        objetoTd.className = "col-objeto";
-        const objeto = item.objetoCompra || "-";
-        objetoTd.innerHTML = `<span>${objeto}</span>`;
-        tr.appendChild(objetoTd);
+el("year").addEventListener("change", ()=>{
+  el("chipAno").textContent = el("year").value;
+  el("kYear").textContent = el("year").value;
+});
 
-        // Município
-        const munTd = document.createElement("td");
-        munTd.className = "col-municipio";
-        const munNome = item?.unidadeOrgao?.municipioNome || "-";
-        const ufSigla = item?.unidadeOrgao?.ufSigla || "RS";
-        munTd.textContent = munNome ? `${munNome} / ${ufSigla}` : `- / ${ufSigla}`;
-        tr.appendChild(munTd);
+el("btnLoad").addEventListener("click", async ()=>{
+  try{
+    el("btnExport").disabled = true;
+    setProgress(0);
+    setStatus("", "Iniciando…");
+    await loadData();
+  }catch(err){
+    console.error(err);
+    setStatus("bad", "Erro ao carregar (veja console)");
+    setProgress(0);
+  }
+});
 
-        // Datas
-        const datasTd = document.createElement("td");
-        datasTd.className = "col-datas";
-        const dtAbertura = formatDateDisplay(item.dataAberturaProposta);
-        const dtEnc = formatDateDisplay(item.dataEncerramentoProposta);
-        datasTd.innerHTML = `${dtAbertura}<br><span style="color:#9ca3af;">até ${dtEnc}</span>`;
-        tr.appendChild(datasTd);
+el("btnClear").addEventListener("click", ()=>{
+  el("q").value = "";
+  el("orgao").value = "";
+  el("municipio").value = "";
+  el("modalidade").value = "";
+  applyFilters();
+});
 
-        // Valor
-        const valorTd = document.createElement("td");
-        valorTd.className = "col-valor";
-        valorTd.textContent = formatCurrencyBRL(item.valorTotalEstimado);
-        tr.appendChild(valorTd);
+function debounce(fn, ms){
+  let t;
+  return (...args)=>{
+    clearTimeout(t);
+    t = setTimeout(()=>fn(...args), ms);
+  };
+}
 
-        // Ações
-        const acaoTd = document.createElement("td");
-        const btnVer = document.createElement("button");
-        btnVer.type = "button";
-        btnVer.className = "btn-secondary";
-        btnVer.textContent = "Ver licitação";
-        btnVer.onclick = () => {
-          const idPncp = item.numeroControlePNCP;
-          const urlPncp = idPncp
-            ? `https://pncp.gov.br/app/editais?q=${encodeURIComponent(idPncp)}`
-            : "https://pncp.gov.br/app/editais";
-          window.open(urlPncp, "_blank");
-        };
-        acaoTd.appendChild(btnVer);
-        tr.appendChild(acaoTd);
-
-        tbody.appendChild(tr);
-      }
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      showError("");
-      setLoading(true, "Buscando licitações abertas no PNCP…");
-      clearTable();
-      showEmpty("Buscando dados no PNCP…");
-
-      const filtros = {
-        descricao: descricaoInput.value,
-        municipio: municipioInput.value,
-        dataFinal: dataFinalInput.value
-      };
-
-      try {
-        const lista = await fetchLicitacoesRS({ dataFinal: filtros.dataFinal });
-        renderResults(lista, {
-          filtroDescricao: filtros.descricao,
-          filtroMunicipio: filtros.municipio
-        });
-      } catch (err) {
-        console.error(err);
-        showEmpty("Não foi possível carregar as licitações.");
-        showError(
-          "Erro ao consultar a API (proxy/PNCP). Verifique se o Worker está ativo e a URL está correta."
-        );
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    btnLimpar.addEventListener("click", () => {
-      descricaoInput.value = "";
-      municipioInput.value = "";
-      setDefaultDate();
-      showError("");
-      clearTable();
-      showEmpty(
-        "Filtros limpos. Preencha os campos acima e clique em “Buscar licitações”."
-      );
-    });
-  </script>
+// Inicial
+setStatus("", "Aguardando");
+setProgress(0);
+</script>
 </body>
 </html>
